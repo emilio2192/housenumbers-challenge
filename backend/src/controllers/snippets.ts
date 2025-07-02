@@ -6,8 +6,8 @@ import { claudeService } from '../services/claude.service';
 // POST /snippets - Create a new snippet
 export const createSnippet = async (req: Request, res: Response) => {
   try {
-    const summaryResponse = await claudeService.generateSummary({text: req.body.text});
-    const snippet = await (new Snippet({...req.body, summary: summaryResponse.summary}).save());
+    const summaryResponse = await claudeService.generateSummary({ text: req.body.text });
+    const snippet = await new Snippet({ ...req.body, summary: summaryResponse.summary }).save();
 
     res.status(201).json({
       message: 'Snippet created successfully',
@@ -15,10 +15,10 @@ export const createSnippet = async (req: Request, res: Response) => {
     });
   } catch (error) {
     let status = 500;
-    if(error instanceof mongoose.Error.ValidationError) {
+    if (error instanceof mongoose.Error.ValidationError) {
       status = 400;
     }
-    
+
     res.status(status).json({
       message: 'Error creating snippet',
       error: (error as Error).message,
@@ -31,16 +31,16 @@ export const getSnippetById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const snippet = await Snippet.findById(id);
-    
+
     // Check if snippet exists
     if (!snippet) {
       res.status(404).json({
         message: 'Snippet not found',
-        error: `No snippet found with ID: ${id}`
+        error: `No snippet found with ID: ${id}`,
       });
       return;
     }
-    
+
     res.status(200).json({
       message: 'Snippet retrieved successfully',
       data: snippet,
