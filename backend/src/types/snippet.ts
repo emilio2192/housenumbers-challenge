@@ -18,12 +18,6 @@ export interface SnippetResponse {
 export interface SnippetsListResponse {
   message: string;
   data: Snippet[];
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
 }
 
 export interface ValidationError {

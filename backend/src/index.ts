@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import connectDB from "./db";
 import mongoose from "mongoose";
+import snippetsRouter from "./routes/snippets";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,9 @@ app.get("/health", (_req, res) => {
   const dbStatus = dbState === 1 ? "connected" : dbState === 2 ? "connecting" : dbState === 0 ? "disconnected" : "disconnecting";
   res.status(200).json({ status: "ok", db: dbStatus });
 });
+
+// Routes
+app.use("/snippets", snippetsRouter);
 
 connectDB().then(() => {
   app.listen(PORT, () => {
