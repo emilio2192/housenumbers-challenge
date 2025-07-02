@@ -49,5 +49,23 @@ services:
       mongo:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3030:5173"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://localhost:3000
+    depends_on:
+      - backend
+
 volumes:
   mongo-data: 

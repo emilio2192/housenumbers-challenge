@@ -38,35 +38,55 @@ Never commit your real `.env` file or secrets to version control. Use `.env.exam
 
 ## Local Development Setup
 
-1. **Clone the repository:**
-   ```sh
-   git clone https://github.com/emilio2192/housenumbers-challenge
-   cd housenumbers-challenge/backend
+### Prerequisites
+- Node.js 18+ and npm
+- Docker and Docker Compose
+- Anthropic API key
+
+### Quick Start
+
+1. **Clone and setup environment:**
+   ```bash
+   git clone <repository-url>
+   cd housenumbers-challenge
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   # Edit backend/.env with your actual values
+   # Edit frontend/.env if you need to change API_URL
    ```
 
-2. **Install dependencies:**
-   ```sh
-   npm install
+2. **Start the development stack:**
+   ```bash
+   docker-compose -f docker-compose.dev.yml up --build
    ```
 
-3. **Configure environment variables:**
-   - Copy `.env.example` to `.env`:
-     ```sh
-     cp .env.example .env
-     ```
-   - Edit `.env` and fill in your MongoDB URI and Anthropic API key.
+3. **Access the services:**
+   - **Frontend (Remix):** http://localhost:3030
+   - **Backend API:** http://localhost:3000
+   - **MongoDB:** localhost:27017
+   - **Mongo Express:** http://localhost:8081 (admin/admin123)
 
-4. **Start MongoDB (if not using Docker):**
-   - Make sure MongoDB is running locally, or use Docker Compose:
-     ```sh
-     docker-compose up mongo
-     ```
+### Development Workflow
 
-5. **Run the backend server:**
-   ```sh
-   npm run dev
-   ```
-   The API will be available at [http://localhost:3000](http://localhost:3000).
+- **Frontend development:** Edit files in `./frontend/` - changes will hot-reload
+- **Backend development:** Edit files in `./backend/` - changes will hot-reload
+- **Database management:** Use Mongo Express at http://localhost:8081
+
+### Individual Service Development
+
+**Frontend only:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**Backend only:**
+```bash
+cd backend
+npm install
+npm run dev
+```
 
 ## Running Tests
 

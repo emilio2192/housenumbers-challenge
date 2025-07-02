@@ -19,21 +19,40 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: |
           cd backend
           npm ci
 
-      - name: Lint
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint backend
         run: |
           cd backend
           npm run lint
 
-      - name: Run tests
+      - name: Lint frontend
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Run backend tests
         run: |
           cd backend
           npm test
 
-      - name: Build Docker image
+      - name: Type check frontend
         run: |
-          docker build -t ai-snippet-backend ./backend 
+          cd frontend
+          npm run typecheck
+
+      - name: Build backend Docker image
+        run: |
+          docker build -t ai-snippet-backend ./backend
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -t ai-snippet-frontend ./frontend 
