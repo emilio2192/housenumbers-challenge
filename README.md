@@ -9,6 +9,33 @@ AI Snippet Service
 - Docker and Docker Compose
 - Anthropic API key
 
+## Environment Variables & Security
+
+For development, a single `backend/.env` file is used for all services (backend, mongo, and mongo-express) to simplify setup. This file contains all required environment variables for the backend app, MongoDB container, and Mongo Express. See `backend/.env.example` for the full list of variables to set.
+
+**Example required variables:**
+
+# Backend app
+MONGO_URI=
+ANTHROPIC_API_KEY=
+
+# MongoDB container
+MONGO_INITDB_ROOT_USERNAME=
+MONGO_INITDB_ROOT_PASSWORD=
+MONGO_INITDB_DATABASE=
+
+# Mongo Express
+ME_CONFIG_MONGODB_ADMINUSERNAME=
+ME_CONFIG_MONGODB_ADMINPASSWORD=
+ME_CONFIG_MONGODB_SERVER=
+ME_CONFIG_MONGODB_URL=
+ME_CONFIG_BASICAUTH_USERNAME=
+ME_CONFIG_BASICAUTH_PASSWORD=
+
+> **Note:** This approach is for dev simplicity. For production, it is recommended to use separate env files for each service to improve security and clarity.
+
+Never commit your real `.env` file or secrets to version control. Use `.env.example` to document required variables for collaborators.
+
 ## Local Development Setup
 
 1. **Clone the repository:**
@@ -116,12 +143,6 @@ docker-compose up --build
 
 ---
 
-- MongoDB credentials:
-  - Auth username: `admin`
-  - Auth password: `admin123`
-  - Database: `housenumbers`
-
----
 
 ## Post-challenge Reflection
 
