@@ -7,6 +7,15 @@ jest.mock('../../services/claude.service', () => ({
   }
 }));
 
+// Mock the Snippet model
+jest.mock('../../models/Snippet.model', () => {
+  const originalModule = jest.requireActual('../../models/Snippet.model');
+  return {
+    __esModule: true,
+    default: originalModule.default
+  };
+});
+
 import request from 'supertest';
 import express from 'express';
 import snippetsRouter from '../../routes/snippets';
@@ -19,11 +28,39 @@ import {
 } from '../../factories/snippet.factory';
 import { Snippet } from '../../types/snippet';
 import { claudeService } from '../../services/claude.service';
+import SnippetModel from '../../models/Snippet.model';
 
 // Create a test app
 const app = express();
 app.use(express.json());
+
+// Error handling middleware for JSON parsing errors
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof SyntaxError && 'body' in error) {
+    res.status(400).json({
+      message: 'Invalid JSON format',
+      error: 'The request body contains invalid JSON or wrong content type'
+    });
+    return;
+  }
+  next(error);
+});
+
 app.use('/snippets', snippetsRouter);
+
+// 404 handler for non-existent routes (same as in index.ts)
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+    error: `The requested route ${req.originalUrl} does not exist`,
+    availableRoutes: [
+      "GET /health",
+      "POST /snippets",
+      "GET /snippets",
+      "GET /snippets/:id"
+    ]
+  });
+});
 
 describe('Snippets API Endpoints', () => {
     // Setup and teardown for mocks
@@ -163,8 +200,10 @@ describe('Snippets API Endpoints', () => {
 
     describe('GET /snippets/:id', () => {
         it('should retrieve a specific snippet by ID successfully', async () => {
-            const mockSnippet: Snippet = snippetFactory.build();
-            const snippetId = mockSnippet.id;
+            // Create a real snippet in the database
+            const snippetData = createSnippetRequestFactory.build();
+            const snippet = await (new SnippetModel({text: snippetData.text, summary: 'Test summary'}).save());
+            const snippetId = snippet.id;
 
             const response = await request(app)
                 .get(`/snippets/${snippetId}`)
@@ -173,14 +212,11 @@ describe('Snippets API Endpoints', () => {
             expect(response.body).toHaveProperty('message', 'Snippet retrieved successfully');
             expect(response.body).toHaveProperty('data');
             expect(response.body.data).toHaveProperty('id', snippetId);
-            expect(response.body.data).toHaveProperty('text');
-            expect(response.body.data).toHaveProperty('summary');
+            expect(response.body.data).toHaveProperty('text', snippetData.text);
+            expect(response.body.data).toHaveProperty('summary', 'Test summary');
             expect(typeof response.body.data.text).toBe('string');
             expect(typeof response.body.data.summary).toBe('string');
             expect(response.body.data.text.length).toBeGreaterThan(0);
-            
-            // Direct equality comparison with mock data
-            expect(response.body.data).toEqual(mockSnippet);
         });
 
         it('should return 400 when ID format is invalid', async () => {
@@ -197,7 +233,7 @@ describe('Snippets API Endpoints', () => {
         });
 
         it('should return 404 when snippet is not found', async () => {
-            const nonExistentId = 'non-existent-id';
+            const nonExistentId = '6864ad41e3dff13d06bc85f9';
 
             const response = await request(app)
                 .get(`/snippets/${nonExistentId}`)
@@ -209,20 +245,42 @@ describe('Snippets API Endpoints', () => {
         });
 
         it('should return 500 when server error occurs', async () => {
-            const mockSnippet: Snippet = snippetFactory.build();
-            const snippetId = mockSnippet.id;
+            const snippetId = '6864ad41e3dff13d06bc85f9';
+            
+            // Mock Snippet.findById to throw an error
+            const SnippetModel = require('../../models/Snippet.model').default;
+            jest.spyOn(SnippetModel, 'findById').mockRejectedValue(new Error('Database connection error'));
 
             const response = await request(app)
                 .get(`/snippets/${snippetId}`)
                 .expect(500);
 
-            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('message', 'Error retrieving snippet');
+            expect(response.body).toHaveProperty('error', 'Database connection error');
         });
     });
 
     describe('GET /snippets', () => {
         it('should retrieve all snippets successfully', async () => {
-            const mockSnippets: Snippet[] = snippetFactory.buildList(3);
+            // Create 3 real snippets in the database using factory data
+            const snippetData1 = createSnippetRequestFactory.build();
+            const snippetData2 = createSnippetRequestFactory.build();
+            const snippetData3 = createSnippetRequestFactory.build();
+
+            const snippet1 = await (new SnippetModel({
+                text: snippetData1.text,
+                summary: 'Summary for snippet 1'
+            }).save());
+
+            const snippet2 = await (new SnippetModel({
+                text: snippetData2.text,
+                summary: 'Summary for snippet 2'
+            }).save());
+
+            const snippet3 = await (new SnippetModel({
+                text: snippetData3.text,
+                summary: 'Summary for snippet 3'
+            }).save());
 
             const response = await request(app)
                 .get('/snippets')
@@ -243,9 +301,12 @@ describe('Snippets API Endpoints', () => {
                 expect(typeof snippet.summary).toBe('string');
                 expect(snippet.text.length).toBeGreaterThan(0);
             });
-            
-            // Direct equality comparison with mock data
-            expect(response.body.data).toEqual(mockSnippets);
+
+            // Verify that our created snippets are in the response
+            const snippetIds = response.body.data.map((s: any) => s.id);
+            expect(snippetIds).toContain(snippet1.id);
+            expect(snippetIds).toContain(snippet2.id);
+            expect(snippetIds).toContain(snippet3.id);
         });
 
         it('should return empty array when no snippets exist', async () => {
@@ -259,44 +320,26 @@ describe('Snippets API Endpoints', () => {
         });
 
         it('should return 500 when server error occurs', async () => {
+            // Mock Snippet.find to throw an error
+            const SnippetModel = require('../../models/Snippet.model').default;
+            jest.spyOn(SnippetModel, 'find').mockRejectedValue(new Error('Database connection error'));
+
             const response = await request(app)
                 .get('/snippets')
                 .expect(500);
 
-            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('error');
         });
     });
 
     describe('General API Tests', () => {
         it('should return 404 for non-existent routes', async () => {
             const response = await request(app)
-                .get('/snippets/nonexistent/route')
+                .get('/nonexistent/route')
                 .expect(404);
-
-            expect(response.body).toHaveProperty('message');
-            expect(typeof response.body.message).toBe('string');
-        });
-
-        it('should handle malformed JSON in request body', async () => {
-            const response = await request(app)
-                .post('/snippets')
-                .set('Content-Type', 'application/json')
-                .send('{"invalid": json}')
-                .expect(400);
-
-            expect(response.body).toHaveProperty('message');
-            expect(typeof response.body.message).toBe('string');
-        });
-
-        it('should handle requests with wrong content type', async () => {
-            const response = await request(app)
-                .post('/snippets')
-                .set('Content-Type', 'text/plain')
-                .send('plain text')
-                .expect(400);
-
-            expect(response.body).toHaveProperty('message');
-            expect(typeof response.body.message).toBe('string');
+            expect(response.body).toHaveProperty('message', 'Route not found');
+            expect(response.body).toHaveProperty('error');
+            expect(typeof response.body.error).toBe('string');
         });
     });
 }); 

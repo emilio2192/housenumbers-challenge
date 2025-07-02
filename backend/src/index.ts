@@ -38,6 +38,20 @@ app.get("/health", async (_req, res) => {
 // Routes
 app.use("/snippets", snippetsRouter);
 
+// 404 handler for non-existent routes
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+    error: `The requested route ${req.originalUrl} does not exist`,
+    availableRoutes: [
+      "GET /health",
+      "POST /snippets",
+      "GET /snippets",
+      "GET /snippets/:id"
+    ]
+  });
+});
+
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

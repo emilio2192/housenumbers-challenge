@@ -1,5 +1,6 @@
 import express from 'express';
 import { createSnippet, getSnippetById, getAllSnippets } from '../controllers/snippets';
+import { validateObjectId } from '../middleware/validation';
 
 const router = express.Router();
 
@@ -7,7 +8,7 @@ const router = express.Router();
 router.post('/', createSnippet);
 
 // GET /snippets/:id - Get a specific snippet by ID
-router.get('/:id', getSnippetById);
+router.get('/:id', validateObjectId('id'), getSnippetById);
 
 // GET /snippets - Get all snippets
 router.get('/', getAllSnippets);

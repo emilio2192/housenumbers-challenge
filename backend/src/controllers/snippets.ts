@@ -30,10 +30,20 @@ export const createSnippet = async (req: Request, res: Response) => {
 export const getSnippetById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    // TODO: Add database logic to fetch snippet by ID
+    const snippet = await Snippet.findById(id);
+    
+    // Check if snippet exists
+    if (!snippet) {
+      res.status(404).json({
+        message: 'Snippet not found',
+        error: `No snippet found with ID: ${id}`
+      });
+      return;
+    }
+    
     res.status(200).json({
       message: 'Snippet retrieved successfully',
-      data: { id, snippet: 'Sample snippet data' },
+      data: snippet,
     });
   } catch (error) {
     res.status(500).json({
@@ -46,10 +56,10 @@ export const getSnippetById = async (req: Request, res: Response) => {
 // GET /snippets - Get all snippets
 export const getAllSnippets = async (req: Request, res: Response) => {
   try {
-    // TODO: Add database logic to fetch all snippets
+    const snippets = await Snippet.find();
     res.status(200).json({
       message: 'Snippets retrieved successfully',
-      data: [],
+      data: snippets,
     });
   } catch (error) {
     res.status(500).json({
