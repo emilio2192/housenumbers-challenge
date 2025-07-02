@@ -1,11 +1,14 @@
 import { Request, Response } from 'express';
 import Snippet from '../models/Snippet.model';
 import mongoose from 'mongoose';
+import { claudeService } from '../services/claude.service';
 
 // POST /snippets - Create a new snippet
 export const createSnippet = async (req: Request, res: Response) => {
   try {
-    const snippet = await (new Snippet({...req.body, summary: 'Summary created by AI dummy by the moment'}).save());
+    const summaryResponse = await claudeService.generateSummary({text: req.body.text});
+    const snippet = await (new Snippet({...req.body, summary: summaryResponse.summary}).save());
+
     res.status(201).json({
       message: 'Snippet created successfully',
       data: snippet,
@@ -15,9 +18,10 @@ export const createSnippet = async (req: Request, res: Response) => {
     if(error instanceof mongoose.Error.ValidationError) {
       status = 400;
     }
+    
     res.status(status).json({
       message: 'Error creating snippet',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: (error as Error).message,
     });
   }
 };

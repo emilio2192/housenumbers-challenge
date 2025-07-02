@@ -1,3 +1,12 @@
+// Mock the claude service before importing anything else
+jest.mock('../../services/claude.service', () => ({
+  claudeService: {
+    generateSummary: jest.fn(),
+    healthCheck: jest.fn(),
+    isConfigured: jest.fn()
+  }
+}));
+
 import request from 'supertest';
 import express from 'express';
 import snippetsRouter from '../../routes/snippets';
@@ -9,6 +18,7 @@ import {
   snippetWithWhitespaceTextFactory,
 } from '../../factories/snippet.factory';
 import { Snippet } from '../../types/snippet';
+import { claudeService } from '../../services/claude.service';
 
 // Create a test app
 const app = express();
@@ -16,6 +26,20 @@ app.use(express.json());
 app.use('/snippets', snippetsRouter);
 
 describe('Snippets API Endpoints', () => {
+    // Setup and teardown for mocks
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (claudeService.generateSummary as jest.Mock).mockResolvedValue({
+            summary: 'Mock summary',
+            tokensUsed: 150
+        });
+        (claudeService.healthCheck as jest.Mock).mockResolvedValue(true);
+        (claudeService.isConfigured as jest.Mock).mockReturnValue(true);
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
     describe('POST /snippets', () => {
         it('should create a new snippet successfully', async () => {
             const snippetData = createSnippetRequestFactory.build();
@@ -35,9 +59,7 @@ describe('Snippets API Endpoints', () => {
         });
 
         it('should return 400 when text field is missing', async () => {
-            const invalidData = {
-              text: undefined
-            };
+            const invalidData = {};
 
             const response = await request(app)
                 .post('/snippets')
@@ -45,9 +67,8 @@ describe('Snippets API Endpoints', () => {
                 .expect(400);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body).toHaveProperty('errors');
-            expect(Array.isArray(response.body.errors)).toBe(true);
-            expect(response.body.errors.length).toBeGreaterThan(0);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toContain('Text is required');
         });
 
         it('should return 400 when text is empty', async () => {
@@ -59,9 +80,9 @@ describe('Snippets API Endpoints', () => {
                 .expect(400);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body).toHaveProperty('errors');
-            expect(Array.isArray(response.body.errors)).toBe(true);
-            expect(response.body.errors.length).toBeGreaterThan(0);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toContain('Text is required');
+            
         });
 
         it('should return 400 when text is only whitespace', async () => {
@@ -73,9 +94,8 @@ describe('Snippets API Endpoints', () => {
                 .expect(400);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body).toHaveProperty('errors');
-            expect(Array.isArray(response.body.errors)).toBe(true);
-            expect(response.body.errors.length).toBeGreaterThan(0);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toContain('Text is required');
         });
 
         it('should return 400 when text is too short', async () => {
@@ -87,20 +107,57 @@ describe('Snippets API Endpoints', () => {
                 .expect(400);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body).toHaveProperty('errors');
-            expect(Array.isArray(response.body.errors)).toBe(true);
-            expect(response.body.errors.length).toBeGreaterThan(0);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toContain('Text must be at least 30 characters long');
         });
 
-        it('should return 500 when server error occurs', async () => {
+        it('should return 500 when Claude service fails', async () => {
             const snippetData = createSnippetRequestFactory.build();
+            
+            // Mock Claude service to fail
+            (claudeService.generateSummary as jest.Mock).mockRejectedValue(new Error('Claude API error'));
 
             const response = await request(app)
                 .post('/snippets')
                 .send(snippetData)
                 .expect(500);
 
-            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('message', 'Error creating snippet');
+            expect(response.body).toHaveProperty('error', 'Claude API error');
+        });
+
+        it('should call Claude service with correct parameters', async () => {
+            const snippetData = createSnippetRequestFactory.build();
+            const expectedSummary = 'Mock summary for testing';
+            
+            // Mock specific summary response
+            (claudeService.generateSummary as jest.Mock).mockResolvedValue({
+                summary: expectedSummary,
+                tokensUsed: 150
+            });
+
+            const response = await request(app)
+                .post('/snippets')
+                .send(snippetData)
+                .expect(201);
+
+            expect(response.body.data.summary).toBe(expectedSummary);
+            expect(claudeService.generateSummary).toHaveBeenCalledWith({ text: snippetData.text });
+        });
+
+        it('should handle Claude service returning empty summary', async () => {
+            const snippetData = createSnippetRequestFactory.build();
+            
+            // Mock Claude service to throw error for empty summary
+            (claudeService.generateSummary as jest.Mock).mockRejectedValue(new Error('Failed to generate summary'));
+
+            const response = await request(app)
+                .post('/snippets')
+                .send(snippetData)
+                .expect(500);
+
+            expect(response.body).toHaveProperty('message', 'Error creating snippet');
+            expect(response.body).toHaveProperty('error', 'Failed to generate summary');
         });
     });
 
