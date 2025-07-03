@@ -5,7 +5,10 @@ import Index from '../_index';
 import { vi } from 'vitest';
 
 vi.mock('~/utils/request');
-const mockRequest = request as { getSummaries: ReturnType<typeof vi.fn> };
+const mockRequest = request as {
+  getSummaries: ReturnType<typeof vi.fn>;
+  getSnippet: ReturnType<typeof vi.fn>;
+};
 
 describe('Index page', () => {
   afterEach(() => {

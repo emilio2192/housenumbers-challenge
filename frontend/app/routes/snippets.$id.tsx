@@ -1,6 +1,10 @@
-import type { MetaFunction } from "@remix-run/node";
-import { useParams } from "@remix-run/react";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { useNavigate, useLoaderData } from "@remix-run/react";
+import { redirect } from "@remix-run/node";
+import Header from "~/components/Header";
 import Button from "~/components/Button";
+import { useSnippet } from "~/utils/useSnippet";
+import LogoLoader from "~/components/LogoLoader";
 
 export const meta: MetaFunction = () => {
   return [
@@ -9,38 +13,88 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export default function SnippetDetails() {
-  const params = useParams();
+export async function loader({ params }: LoaderFunctionArgs) {
   const snippetId = params.id;
+  
+  // Handle missing or empty ID
+  if (!snippetId || snippetId.trim() === '') {
+    throw redirect("/not-found");
+  }
+  
+  // Handle invalid ID format (basic validation)
+  if (!/^[a-zA-Z0-9-]+$/.test(snippetId)) {
+    throw redirect("/not-found");
+  }
+
+  return { snippetId };
+}
+
+const TEXT = {
+  buttonBack: "Back",
+  notFoundTitle: "Snippet Not Found",
+  notFoundMessage: "The snippet you're looking for doesn't exist or has been removed.",
+  backToHome: "Back to Home",
+  details: "Snippet Details",
+  summary: "Summary",
+  originalText: "Original Text",
+  created: "Created:",
+  updated: "Updated:",
+};
+
+function formatDate(dateString: string) {
+  const d = new Date(dateString);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export default function SnippetDetails() {
+  const { snippetId } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const { snippet, loading, error } = useSnippet(snippetId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            Snippet Details
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            This is the details page for viewing snippet information.
-          </p>
-                      <div className="bg-white rounded-lg shadow-md p-8 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Snippet ID: {snippetId}
-              </h2>
-              <p className="text-lg text-gray-700 mb-6">
-                Details for snippet with ID: {snippetId} will be displayed here.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button onClick={() => console.log('Edit snippet')}>
-                  Edit Snippet
-                </Button>
-                <Button onClick={() => console.log('Back to list')}>
-                  Back to List
-                </Button>
+    <div className="min-h-screen bg-white">
+      <Header 
+        buttonText={TEXT.buttonBack} 
+        onButtonClick={() => navigate("/")} 
+      />
+      <main className="flex flex-col items-center justify-center w-full mt-12">
+        <div className="flex flex-col items-center w-1/2">
+          {loading && <LogoLoader />}
+          {error && !loading && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl w-full text-center">
+              <h2 className="text-xl font-semibold text-red-800 mb-2">{TEXT.notFoundTitle}</h2>
+              <p className="text-red-600 mb-4">{TEXT.notFoundMessage}</p>
+              <Button onClick={() => navigate("/")}>{TEXT.backToHome}</Button>
+            </div>
+          )}
+          {!loading && !error && snippet && (
+            <div className="bg-white rounded-lg shadow-md p-8 max-w-2xl w-full">
+              <h1 className="text-2xl font-bold text-gray-800 mb-4">
+                {TEXT.details}
+              </h1>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-700">{TEXT.summary}</h2>
+                  <p className="text-gray-600">{snippet.summary}</p>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-700">{TEXT.originalText}</h2>
+                  <pre className="bg-gray-50 p-4 rounded-lg text-sm text-gray-800 whitespace-pre-wrap">
+                    {snippet.text}
+                  </pre>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>{TEXT.created} {formatDate(snippet.createdAt)}</p>
+                  <p>{TEXT.updated} {formatDate(snippet.updatedAt)}</p>
+                </div>
               </div>
             </div>
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 } 
