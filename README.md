@@ -179,9 +179,11 @@ docker-compose up --build
 
 ## Post-challenge Reflection
 
-### Backend
-#### Improvements
-- Apply some validator like zod to improve the process, now the DB handle the validation of the data
-#### Missing
-- Implements JWT
-- Streaming AI summary via SSE
+Backend:
+I was missing authentication with JWT and streaming AI summaries via Server-Sent Events. I would also like to improve the use of Husky to avoid errors in the pipeline, and manage environment variables better, for example by using a secret manager. I would also like to implement Zod or Joi for validation, instead of leaving all error handling to the database.
+
+Frontend:
+I did not implement JWT usage, and I would like to follow better Remix best practices, since I have experience with Next.js but not with Remix.
+
+General:
+I tried to use TDD, but I changed the structure of the responses (not the logic) in the tests as I went. I think I made several extra commits because I was testing GitHub Actions.
