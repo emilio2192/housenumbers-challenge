@@ -10,6 +10,34 @@ Run the dev server:
 npm run dev
 ```
 
+## Testing
+
+This project uses [Vitest](https://vitest.dev/) for testing, which is a Vite-native test runner that works seamlessly with Remix and ESM modules.
+
+### Running Tests
+
+Run all tests:
+```sh
+npm test
+```
+
+Run tests in watch mode (for development):
+```sh
+npm run test:watch
+```
+
+Run tests with UI:
+```sh
+npm run test:ui
+```
+
+### Test Structure
+
+- Tests are located in `app/**/__tests__/` directories
+- Uses React Testing Library for component testing
+- Uses `@remix-run/testing` for Remix-specific testing utilities
+- API calls are mocked using Vitest's mocking API
+
 ## Deployment
 
 First, build your app for production:

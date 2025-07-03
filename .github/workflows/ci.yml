@@ -49,6 +49,11 @@ jobs:
           cd frontend
           npm run typecheck
 
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm test
+
       - name: Build backend Docker image
         run: |
           docker build -t ai-snippet-backend ./backend
