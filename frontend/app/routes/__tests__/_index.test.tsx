@@ -2,13 +2,9 @@ import { createRemixStub } from '@remix-run/testing';
 import { render, screen, waitFor } from '@testing-library/react';
 import * as request from '~/utils/request';
 import Index from '../_index';
-import { vi } from 'vitest';
+import { vi, Mock } from 'vitest';
 
 vi.mock('~/utils/request');
-const mockRequest = request as {
-  getSummaries: ReturnType<typeof vi.fn>;
-  getSnippet: ReturnType<typeof vi.fn>;
-};
 
 describe('Index page', () => {
   afterEach(() => {
@@ -26,25 +22,25 @@ describe('Index page', () => {
   }
 
   it('shows loading state', () => {
-    mockRequest.getSummaries.mockReturnValue(new Promise(() => {}));
+    (request.getSummaries as Mock).mockReturnValue(new Promise(() => {}));
     renderWithRemixStub();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
   it('shows error state', async () => {
-    mockRequest.getSummaries.mockRejectedValue(new Error('API error'));
+    (request.getSummaries as Mock).mockRejectedValue(new Error('API error'));
     renderWithRemixStub();
     await waitFor(() => expect(screen.getByText(/error/i)).toBeInTheDocument());
   });
 
   it('shows empty state', async () => {
-    mockRequest.getSummaries.mockResolvedValue({ message: 'ok', data: [] });
+    (request.getSummaries as Mock).mockResolvedValue({ message: 'ok', data: [] });
     renderWithRemixStub();
     await waitFor(() => expect(screen.getByText(/no summaries yet/i)).toBeInTheDocument());
   });
 
   it('shows summaries', async () => {
-    mockRequest.getSummaries.mockResolvedValue({
+    (request.getSummaries as Mock).mockResolvedValue({
       message: 'ok',
       data: [
         { id: '1', summary: 'Summary 1', text: 'Text 1' },

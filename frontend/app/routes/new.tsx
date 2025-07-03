@@ -1,4 +1,9 @@
 import type { MetaFunction } from "@remix-run/node";
+import { useNavigate } from "@remix-run/react";
+import { useState } from "react";
+import Button from "~/components/Button";
+import Header from "~/components/Header";
+import { useCreateSnippet } from "~/utils/useCreateSnippet";
 
 export const meta: MetaFunction = () => {
   return [
@@ -6,25 +11,46 @@ export const meta: MetaFunction = () => {
     { name: "description", content: "Create a new code snippet" },
   ];
 };
-
+const TEXT = {
+  buttonBack: "Back",
+  title: "Create New Snippet",
+};
 export default function NewSnippet() {
+  const navigate = useNavigate();
+  const { submit, loading, error } = useCreateSnippet();
+  const [text, setText] = useState("");
+
+  const handleSubmit = async () => {
+    const result = await submit(text);
+    if (result) {
+      navigate(`/snippets/${result.id}`);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            Create New Snippet
+    <div className="min-h-screen bg-white">
+      <Header
+        buttonText={TEXT.buttonBack}
+        onButtonClick={() => navigate("/")}
+      />
+      <main className="flex flex-col items-center justify-center w-full mt-12">
+        <div className="flex flex-col items-center w-1/2">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 self-start">
+            {TEXT.title}
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            This is the create page where users can add new code snippets.
-          </p>
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-2xl mx-auto">
-            <p className="text-lg text-gray-700">
-              Form will go here for creating new snippets.
-            </p>
-          </div>
+          <textarea 
+            className="w-full h-96 p-4 border border-gray-300 rounded-lg resize-none" 
+            placeholder="Enter your text to be summarized here..."
+            onChange={(e) => setText(e.target.value)}
+           />
+          {error && (
+            <div className="text-red-600 mt-2 w-full text-left">{error}</div>
+          )}
+          <Button className="self-end mt-4" onClick={handleSubmit} disabled={loading || text.length === 0}>
+            Save Snippet
+          </Button>
         </div>
-      </div>
+      </main>
     </div>
   );
 } 
