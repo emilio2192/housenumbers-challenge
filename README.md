@@ -66,6 +66,19 @@ Never commit your real `.env` file or secrets to version control. Use `.env.exam
    - **MongoDB:** localhost:27017
    - **Mongo Express:** http://localhost:8081 (admin/admin123)
 
+## Frontend Routes
+
+The Remix frontend includes the following pages:
+
+- **Home/Listing Page** (`/`): Main page displaying all snippets
+- **Create New Snippet** (`/new`): Form page for creating new snippets  
+- **Snippet Details** (`/snippets/:id`): Detailed view of a specific snippet by ID
+
+### Example URLs:
+- `http://localhost:3030/` - Home page with snippets listing
+- `http://localhost:3030/new` - Create new snippet page
+- `http://localhost:3030/snippets/123` - View details for snippet with ID "123"
+
 ### Development Workflow
 
 - **Frontend development:** Edit files in `./frontend/` - changes will hot-reload
